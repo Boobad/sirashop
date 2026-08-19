@@ -1,5 +1,6 @@
 package com.sirashop.service;
 
+import com.sirashop.dto.ChangePasswordDto;
 import com.sirashop.dto.UserDto;
 import com.sirashop.entity.Company;
 import com.sirashop.entity.Shop;
@@ -8,6 +9,7 @@ import com.sirashop.repository.CompanyRepository;
 import com.sirashop.repository.ShopRepository;
 import com.sirashop.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,22 +22,21 @@ public class UserService {
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final ShopRepository shopRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserDto createUser(UserDto dto) {
         User user = new User();
         user.setUsername(dto.getUsername());
-        user.setPassword(dto.getPassword()); // Attention: on devra utiliser BCryptEncoder ici plus tard !
+        user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setRole(dto.getRole());
         user.setActive(true);
 
-        // Si l'utilisateur appartient à une entreprise
         if (dto.getCompanyId() != null) {
             Company company = companyRepository.findById(dto.getCompanyId())
                     .orElseThrow(() -> new RuntimeException("Entreprise non trouvée"));
             user.setCompany(company);
         }
 
-        // Si l'utilisateur appartient à une boutique précise (vendeur, technicien...)
         if (dto.getShopId() != null) {
             Shop shop = shopRepository.findById(dto.getShopId())
                     .orElseThrow(() -> new RuntimeException("Boutique non trouvée"));
@@ -44,6 +45,18 @@ public class UserService {
 
         User saved = userRepository.save(user);
         return mapToDto(saved);
+    }
+
+    public void changePassword(ChangePasswordDto dto) {
+        User user = userRepository.findById(dto.getUserId())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            throw new RuntimeException("Ancien mot de passe incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userRepository.save(user);
     }
 
     public List<UserDto> getUsersByCompany(Long companyId) {

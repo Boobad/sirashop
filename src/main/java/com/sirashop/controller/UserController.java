@@ -1,5 +1,6 @@
 package com.sirashop.controller;
 
+import com.sirashop.dto.ChangePasswordDto;
 import com.sirashop.dto.UserDto;
 import com.sirashop.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -19,6 +21,12 @@ public class UserController {
     @PostMapping
     public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDto) {
         return ResponseEntity.ok(userService.createUser(userDto));
+    }
+
+    @PutMapping("/change-password")
+    public ResponseEntity<Map<String, String>> changePassword(@RequestBody ChangePasswordDto dto) {
+        userService.changePassword(dto);
+        return ResponseEntity.ok(Map.of("message", "Mot de passe modifié avec succès"));
     }
 
     @GetMapping("/company/{companyId}")
