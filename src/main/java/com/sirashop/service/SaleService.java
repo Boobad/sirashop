@@ -44,7 +44,6 @@ public class SaleService {
             Product product = productRepository.findById(itemDto.getProductId())
                     .orElseThrow(() -> new RuntimeException("Produit non trouvé: " + itemDto.getProductId()));
 
-            // 1. Déduction automatique du stock
             Inventory inventory = inventoryRepository.findByShopIdAndProductId(shop.getId(), product.getId())
                     .orElseThrow(() -> new RuntimeException("Pas de stock configuré pour " + product.getName() + " dans cette boutique"));
 
@@ -55,14 +54,17 @@ public class SaleService {
             inventory.setQuantity(inventory.getQuantity() - itemDto.getQuantity());
             inventoryRepository.save(inventory);
 
-            // 2. Ligne de vente
             SaleItem item = new SaleItem();
             item.setSale(sale);
             item.setProduct(product);
             item.setQuantity(itemDto.getQuantity());
-            item.setUnitPrice(product.getSellingPrice());
+            
+            // Si le prix unitaire a été négocié en caisse, l'utiliser sinon prendre le prix du catalogue
+            BigDecimal unitPrice = (itemDto.getUnitPrice() != null && itemDto.getUnitPrice().compareTo(BigDecimal.ZERO) > 0) 
+                    ? itemDto.getUnitPrice() : product.getSellingPrice();
+            item.setUnitPrice(unitPrice);
 
-            BigDecimal lineTotal = product.getSellingPrice().multiply(BigDecimal.valueOf(itemDto.getQuantity()));
+            BigDecimal lineTotal = unitPrice.multiply(BigDecimal.valueOf(itemDto.getQuantity()));
             item.setTotalPrice(lineTotal);
 
             totalSaleAmount = totalSaleAmount.add(lineTotal);
@@ -81,11 +83,18 @@ public class SaleService {
                 .collect(Collectors.toList());
     }
 
+    public List<SaleDto> getSalesByCompany(Long companyId) {
+        return saleRepository.findByCompanyId(companyId).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
     private SaleDto mapToDto(Sale sale) {
         SaleDto dto = new SaleDto();
         dto.setId(sale.getId());
         dto.setCompanyId(sale.getCompany().getId());
         dto.setShopId(sale.getShop().getId());
+        dto.setShopName(sale.getShop().getName());
         dto.setSellerId(sale.getSeller().getId());
         dto.setSellerUsername(sale.getSeller().getUsername());
         dto.setTotalAmount(sale.getTotalAmount());

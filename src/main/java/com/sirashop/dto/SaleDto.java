@@ -10,6 +10,7 @@ public class SaleDto {
     private Long id;
     private Long companyId;
     private Long shopId;
+    private String shopName;
     private Long sellerId;
     private String sellerUsername;
     private BigDecimal totalAmount;

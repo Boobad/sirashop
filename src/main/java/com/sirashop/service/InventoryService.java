@@ -50,6 +50,12 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
+    public List<InventoryDto> getNetworkStockByProduct(Long productId) {
+        return inventoryRepository.findByProductId(productId).stream()
+                .map(this::mapToDto)
+                .collect(Collectors.toList());
+    }
+
     private InventoryDto mapToDto(Inventory inventory) {
         InventoryDto dto = new InventoryDto();
         dto.setId(inventory.getId());
@@ -57,6 +63,7 @@ public class InventoryService {
         dto.setProductName(inventory.getProduct().getName());
         dto.setShopId(inventory.getShop().getId());
         dto.setShopName(inventory.getShop().getName());
+        dto.setShopAddress(inventory.getShop().getAddress());
         dto.setQuantity(inventory.getQuantity());
         dto.setAlertThreshold(inventory.getAlertThreshold());
         return dto;

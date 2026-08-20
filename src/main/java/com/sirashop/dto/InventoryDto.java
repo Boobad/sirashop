@@ -9,6 +9,7 @@ public class InventoryDto {
     private String productName;
     private Long shopId;
     private String shopName;
+    private String shopAddress;
     private Integer quantity;
     private Integer alertThreshold;
 }

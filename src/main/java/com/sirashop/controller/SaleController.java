@@ -25,4 +25,9 @@ public class SaleController {
     public ResponseEntity<List<SaleDto>> getSalesByShop(@PathVariable Long shopId) {
         return ResponseEntity.ok(saleService.getSalesByShop(shopId));
     }
+
+    @GetMapping("/company/{companyId}")
+    public ResponseEntity<List<SaleDto>> getSalesByCompany(@PathVariable Long companyId) {
+        return ResponseEntity.ok(saleService.getSalesByCompany(companyId));
+    }
 }
