@@ -23,6 +23,7 @@ public class UserService {
     private final CompanyRepository companyRepository;
     private final ShopRepository shopRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     public UserDto createUser(UserDto dto) {
         User user = new User();
@@ -31,10 +32,12 @@ public class UserService {
         user.setRole(dto.getRole());
         user.setActive(true);
 
+        String companyName = null;
         if (dto.getCompanyId() != null) {
             Company company = companyRepository.findById(dto.getCompanyId())
                     .orElseThrow(() -> new RuntimeException("Entreprise non trouvée"));
             user.setCompany(company);
+            companyName = company.getName();
         }
 
         if (dto.getShopId() != null) {
@@ -44,6 +47,17 @@ public class UserService {
         }
 
         User saved = userRepository.save(user);
+
+        // Envoi de l'email avec les identifiants à l'utilisateur
+        String roleDescription = (dto.getRole() != null) ? dto.getRole().name() : "Utilisateur";
+        emailService.sendAccountCreatedEmailAsync(
+                dto.getUsername(),
+                dto.getUsername(),
+                dto.getPassword(),
+                roleDescription,
+                companyName
+        );
+
         return mapToDto(saved);
     }
 
@@ -69,6 +83,21 @@ public class UserService {
         return userRepository.findByShopId(shopId).stream()
                 .map(this::mapToDto)
                 .collect(Collectors.toList());
+    }
+
+    public void deleteUser(Long userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("Utilisateur non trouvé: " + userId);
+        }
+        userRepository.deleteById(userId);
+    }
+
+    public UserDto toggleUserActive(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + userId));
+        user.setActive(!user.isActive());
+        User saved = userRepository.save(user);
+        return mapToDto(saved);
     }
 
     private UserDto mapToDto(User user) {

@@ -38,4 +38,15 @@ public class UserController {
     public ResponseEntity<List<UserDto>> getUsersByShop(@PathVariable Long shopId) {
         return ResponseEntity.ok(userService.getUsersByShop(shopId));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.ok(Map.of("message", "Utilisateur supprimé avec succès"));
+    }
+
+    @PutMapping("/{id}/toggle-active")
+    public ResponseEntity<UserDto> toggleUserActive(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.toggleUserActive(id));
+    }
 }

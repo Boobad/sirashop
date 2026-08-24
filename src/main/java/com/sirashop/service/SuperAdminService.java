@@ -26,6 +26,7 @@ public class SuperAdminService {
     private final UserRepository userRepository;
     private final SubscriptionPaymentRepository paymentRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     public SuperAdminStatsDto getStats() {
         List<Company> companies = companyRepository.findAll();
@@ -68,6 +69,16 @@ public class SuperAdminService {
         admin.setActive(true);
 
         User saved = userRepository.save(admin);
+
+        // Envoi de l'email avec les identifiants au Super Admin
+        emailService.sendAccountCreatedEmailAsync(
+                dto.getUsername(),
+                dto.getUsername(),
+                dto.getPassword(),
+                "Super Administrateur",
+                "Plateforme SiraShop"
+        );
+
         UserDto result = new UserDto();
         result.setId(saved.getId());
         result.setUsername(saved.getUsername());

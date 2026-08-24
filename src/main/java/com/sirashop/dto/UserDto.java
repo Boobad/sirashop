@@ -7,7 +7,7 @@ import lombok.Data;
 public class UserDto {
     private Long id;
     private String username;
-    private String password; // Dans la vraie vie, on ne le renvoie pas, mais c'est pour la création
+    private String password; // Dans la vraie vie, onv ne le renvoie pas, mais c'est pour la création
     private Role role;
     private Long companyId;
     private Long shopId;

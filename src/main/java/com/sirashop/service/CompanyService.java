@@ -21,6 +21,7 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final EmailService emailService;
 
     public CompanyDto createCompany(CompanyDto dto) {
         Company company = new Company();
@@ -45,6 +46,15 @@ public class CompanyService {
         owner.setCompany(savedCompany);
         owner.setActive(true);
         userRepository.save(owner);
+
+        // Envoi de l'email avec les identifiants au propriétaire
+        emailService.sendAccountCreatedEmailAsync(
+                dto.getOwnerUsername(),
+                dto.getOwnerUsername(),
+                dto.getOwnerPassword(),
+                "Propriétaire d'entreprise",
+                savedCompany.getName()
+        );
 
         return mapToDto(savedCompany);
     }
