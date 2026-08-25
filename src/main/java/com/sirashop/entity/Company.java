@@ -18,6 +18,15 @@ public class Company {
     @Column(nullable = false, unique = true)
     private String name; // ex: MDS
 
+    private String phone; // Téléphone de contact
+
+    private String ownerName; // Nom du propriétaire / gérant
+
+    // Modularité des fonctionnalités
+    private boolean hasSalesEnabled = true; // Module Vente & Stock activé
+
+    private boolean hasRepairsEnabled = false; // Module SAV & Réparations activé
+
     private boolean isActive = true;
 
     @CreationTimestamp

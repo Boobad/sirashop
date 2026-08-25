@@ -32,6 +32,16 @@ public class CompanyController {
         return ResponseEntity.ok(companyService.getAllCompanies());
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<CompanyDto> getCompanyById(@PathVariable Long id) {
+        return ResponseEntity.ok(companyService.getCompanyById(id));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CompanyDto> updateCompany(@PathVariable Long id, @RequestBody CompanyDto companyDto) {
+        return ResponseEntity.ok(companyService.updateCompany(id, companyDto));
+    }
+
     @PutMapping("/{id}/toggle-active")
     public ResponseEntity<CompanyDto> toggleCompanyActive(@PathVariable Long id) {
         return ResponseEntity.ok(companyService.toggleCompanyActive(id));

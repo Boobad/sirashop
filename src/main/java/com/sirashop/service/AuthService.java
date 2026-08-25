@@ -55,7 +55,13 @@ public class AuthService {
 
         if (user.getCompany() != null) {
             response.setCompanyId(user.getCompany().getId());
+            response.setHasSalesEnabled(user.getCompany().isHasSalesEnabled());
+            response.setHasRepairsEnabled(user.getCompany().isHasRepairsEnabled());
+        } else if (user.getRole() == Role.SUPER_ADMIN) {
+            response.setHasSalesEnabled(true);
+            response.setHasRepairsEnabled(true);
         }
+
         if (user.getShop() != null) {
             response.setShopId(user.getShop().getId());
         }

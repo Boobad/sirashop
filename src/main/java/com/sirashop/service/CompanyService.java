@@ -24,8 +24,16 @@ public class CompanyService {
     private final EmailService emailService;
 
     public CompanyDto createCompany(CompanyDto dto) {
+        if (dto.getName() == null || dto.getName().trim().isEmpty()) {
+            throw new RuntimeException("Le nom de l'entreprise est obligatoire.");
+        }
+
         Company company = new Company();
-        company.setName(dto.getName());
+        company.setName(dto.getName().trim());
+        company.setPhone(dto.getPhone() != null ? dto.getPhone().trim() : null);
+        company.setOwnerName(dto.getOwnerName() != null ? dto.getOwnerName().trim() : null);
+        company.setHasSalesEnabled(dto.isHasSalesEnabled());
+        company.setHasRepairsEnabled(dto.isHasRepairsEnabled());
         company.setActive(true);
         
         Company saved = companyRepository.save(company);
@@ -33,31 +41,87 @@ public class CompanyService {
     }
 
     public CompanyDto createCompanyWithOwner(CompanyRegistrationDto dto) {
+        if (dto.getCompanyName() == null || dto.getCompanyName().trim().isEmpty()) {
+            throw new RuntimeException("Le nom de l'entreprise est obligatoire.");
+        }
+
+        String ownerEmail = dto.getOwnerEmail() != null && !dto.getOwnerEmail().trim().isEmpty()
+                ? dto.getOwnerEmail().trim().toLowerCase()
+                : (dto.getOwnerUsername() != null ? dto.getOwnerUsername().trim().toLowerCase() : null);
+
+        if (ownerEmail == null) {
+            throw new RuntimeException("L'adresse email du propriétaire est obligatoire.");
+        }
+
+        if (userRepository.existsByEmailIgnoreCase(ownerEmail)) {
+            throw new RuntimeException("L'adresse email '" + ownerEmail + "' est déjà utilisée par un autre compte.");
+        }
+
         Company company = new Company();
-        company.setName(dto.getCompanyName());
+        company.setName(dto.getCompanyName().trim());
+        company.setPhone(dto.getPhone() != null ? dto.getPhone().trim() : null);
+        company.setOwnerName(dto.getOwnerName() != null ? dto.getOwnerName().trim() : null);
+        company.setHasSalesEnabled(dto.isHasSalesEnabled());
+        company.setHasRepairsEnabled(dto.isHasRepairsEnabled());
         company.setActive(true);
+
         Company savedCompany = companyRepository.save(company);
 
-
         User owner = new User();
-        owner.setEmail(dto.getOwnerUsername());
-        owner.setUsername(dto.getOwnerUsername());
+        owner.setEmail(ownerEmail);
+        owner.setUsername(ownerEmail);
+        owner.setPhone(dto.getPhone() != null ? dto.getPhone().trim() : null);
         owner.setPassword(passwordEncoder.encode(dto.getOwnerPassword()));
         owner.setRole(Role.COMPANY_OWNER);
         owner.setCompany(savedCompany);
         owner.setActive(true);
+
+        if (dto.getOwnerName() != null && !dto.getOwnerName().trim().isEmpty()) {
+            String[] parts = dto.getOwnerName().trim().split("\\s+", 2);
+            owner.setFirstName(parts[0]);
+            if (parts.length > 1) {
+                owner.setLastName(parts[1]);
+            }
+        }
+
         userRepository.save(owner);
 
-
         emailService.sendAccountCreatedEmailAsync(
-                dto.getOwnerUsername(),
-                dto.getOwnerUsername(),
+                ownerEmail,
+                dto.getOwnerName() != null ? dto.getOwnerName() : ownerEmail,
                 dto.getOwnerPassword(),
                 "Propriétaire d'entreprise",
                 savedCompany.getName()
         );
 
         return mapToDto(savedCompany);
+    }
+
+    public CompanyDto updateCompany(Long companyId, CompanyDto dto) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("Entreprise non trouvée: " + companyId));
+
+        if (dto.getName() != null && !dto.getName().trim().isEmpty()) {
+            company.setName(dto.getName().trim());
+        }
+        if (dto.getPhone() != null) {
+            company.setPhone(dto.getPhone().trim());
+        }
+        if (dto.getOwnerName() != null) {
+            company.setOwnerName(dto.getOwnerName().trim());
+        }
+        
+        company.setHasSalesEnabled(dto.isHasSalesEnabled());
+        company.setHasRepairsEnabled(dto.isHasRepairsEnabled());
+
+        Company saved = companyRepository.save(company);
+        return mapToDto(saved);
+    }
+
+    public CompanyDto getCompanyById(Long companyId) {
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new RuntimeException("Entreprise non trouvée: " + companyId));
+        return mapToDto(company);
     }
 
     public List<CompanyDto> getAllCompanies() {
@@ -79,8 +143,13 @@ public class CompanyService {
         CompanyDto dto = new CompanyDto();
         dto.setId(company.getId());
         dto.setName(company.getName());
+        dto.setPhone(company.getPhone());
+        dto.setOwnerName(company.getOwnerName());
+        dto.setHasSalesEnabled(company.isHasSalesEnabled());
+        dto.setHasRepairsEnabled(company.isHasRepairsEnabled());
         dto.setActive(company.isActive());
         dto.setCreatedAt(company.getCreatedAt());
         return dto;
     }
 }
+

@@ -7,6 +7,10 @@ import java.time.LocalDateTime;
 public class CompanyDto {
     private Long id;
     private String name;
+    private String phone;
+    private String ownerName;
+    private boolean hasSalesEnabled = true;
+    private boolean hasRepairsEnabled;
     private boolean isActive;
     private LocalDateTime createdAt;
 }

@@ -15,4 +15,6 @@ public class LoginResponse {
     private Role role;
     private Long companyId;
     private Long shopId;
+    private Boolean hasSalesEnabled;
+    private Boolean hasRepairsEnabled;
 }
