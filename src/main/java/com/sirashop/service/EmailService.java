@@ -147,7 +147,7 @@ public class EmailService {
                                     <!-- Recommandation de sécurité -->
                                     <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 14px 16px; margin-bottom: 25px;">
                                         <p style="margin: 0; color: #92400e; font-size: 13px; line-height: 1.5;">
-                                            🔒 <strong>Sécurité :</strong> Pour des raisons de confidentialité, nous vous recommandons vivement de changer votre mot de passe dès votre première connexion.
+                                            🔒 <strong>Sécurité importante :</strong> Il s'agit d'un mot de passe temporaire par défaut. Vous serez obligatoirement invité(e) à le modifier dès votre première connexion pour activer et sécuriser votre accès.
                                         </p>
                                     </div>
 

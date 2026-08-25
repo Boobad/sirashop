@@ -52,6 +52,7 @@ public class AuthService {
         response.setLastName(user.getLastName());
         response.setPhone(user.getPhone());
         response.setRole(user.getRole());
+        response.setMustChangePassword(user.isMustChangePassword());
 
         if (user.getCompany() != null) {
             response.setCompanyId(user.getCompany().getId());

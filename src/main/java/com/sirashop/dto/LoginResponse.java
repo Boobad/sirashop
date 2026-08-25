@@ -17,4 +17,5 @@ public class LoginResponse {
     private Long shopId;
     private Boolean hasSalesEnabled;
     private Boolean hasRepairsEnabled;
+    private boolean mustChangePassword;
 }

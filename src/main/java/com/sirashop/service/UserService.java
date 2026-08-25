@@ -19,6 +19,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserService {
 
+    public static final String DEFAULT_PASSWORD = "P@ssw0rd";
+
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final ShopRepository shopRepository;
@@ -40,7 +42,12 @@ public class UserService {
             throw new RuntimeException("L'adresse email '" + cleanEmail + "' est déjà utilisée par un autre compte.");
         }
 
-        if (dto.getPassword() == null || dto.getPassword().trim().length() < 6) {
+        // Si aucun mot de passe n'est fourni, on utilise le mot de passe par défaut
+        String rawPassword = (dto.getPassword() != null && !dto.getPassword().trim().isEmpty())
+                ? dto.getPassword().trim()
+                : DEFAULT_PASSWORD;
+
+        if (rawPassword.length() < 6) {
             throw new RuntimeException("Le mot de passe doit comporter au moins 6 caractères.");
         }
         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty() && dto.getPhone().trim().length() < 8) {
@@ -54,7 +61,8 @@ public class UserService {
         User user = new User();
         user.setEmail(cleanEmail);
         user.setUsername(cleanUsername);
-        user.setPassword(passwordEncoder.encode(dto.getPassword()));
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setMustChangePassword(true);
         // Le nom et le prénom ne sont PAS uniques (plusieurs personnes peuvent avoir le même nom)
         user.setFirstName(dto.getFirstName() != null ? dto.getFirstName().trim() : null);
         user.setLastName(dto.getLastName() != null ? dto.getLastName().trim() : null);
@@ -87,7 +95,7 @@ public class UserService {
         emailService.sendAccountCreatedEmailAsync(
                 cleanEmail,
                 recipientDisplayName,
-                dto.getPassword(),
+                rawPassword,
                 roleDescription,
                 companyName
         );
@@ -154,14 +162,19 @@ public class UserService {
     }
 
     public void resetUserPassword(Long userId, String newPassword) {
-        if (newPassword == null || newPassword.trim().length() < 6) {
+        String rawPassword = (newPassword != null && !newPassword.trim().isEmpty())
+                ? newPassword.trim()
+                : DEFAULT_PASSWORD;
+
+        if (rawPassword.length() < 6) {
             throw new RuntimeException("Le nouveau mot de passe doit comporter au moins 6 caractères.");
         }
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé: " + userId));
 
-        user.setPassword(passwordEncoder.encode(newPassword.trim()));
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        user.setMustChangePassword(true);
         userRepository.save(user);
     }
 
@@ -178,6 +191,7 @@ public class UserService {
         }
 
         user.setPassword(passwordEncoder.encode(dto.getNewPassword().trim()));
+        user.setMustChangePassword(false);
         userRepository.save(user);
     }
 
@@ -218,6 +232,7 @@ public class UserService {
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
         dto.setActive(user.isActive());
+        dto.setMustChangePassword(user.isMustChangePassword());
         
         if (user.getCompany() != null) {
             dto.setCompanyId(user.getCompany().getId());

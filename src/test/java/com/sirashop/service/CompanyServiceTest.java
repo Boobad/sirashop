@@ -114,6 +114,37 @@ class CompanyServiceTest {
     }
 
     @Test
+    @DisplayName("Devrait créer une entreprise avec le mot de passe par défaut si le propriétaire n'a pas saisi de mot de passe")
+    void createCompanyWithOwner_DefaultPassword_Success() {
+        CompanyRegistrationDto dto = new CompanyRegistrationDto();
+        dto.setCompanyName("Boutique Mode & Style");
+        dto.setOwnerName("Fatoumata Coulibaly");
+        dto.setOwnerEmail("fatou@sirashop.ml");
+        dto.setOwnerPassword(null); // Pas de mot de passe
+        dto.setHasSalesEnabled(true);
+
+        Company fashionCompany = new Company();
+        fashionCompany.setId(3L);
+        fashionCompany.setName("Boutique Mode & Style");
+
+        when(userRepository.existsByEmailIgnoreCase("fatou@sirashop.ml")).thenReturn(false);
+        when(companyRepository.save(any(Company.class))).thenReturn(fashionCompany);
+        when(passwordEncoder.encode(UserService.DEFAULT_PASSWORD)).thenReturn("encoded_default_pass");
+
+        CompanyDto created = companyService.createCompanyWithOwner(dto);
+
+        assertNotNull(created);
+        verify(userRepository).save(any(User.class));
+        verify(emailService).sendAccountCreatedEmailAsync(
+                eq("fatou@sirashop.ml"),
+                eq("Fatoumata Coulibaly"),
+                eq(UserService.DEFAULT_PASSWORD),
+                eq("Propriétaire d'entreprise"),
+                eq("Boutique Mode & Style")
+        );
+    }
+
+    @Test
     @DisplayName("Devrait mettre à jour la configuration des modules d'une entreprise")
     void updateCompany_Success() {
         CompanyDto updateDto = new CompanyDto();

@@ -62,11 +62,16 @@ public class SuperAdminService {
     }
 
     public UserDto createSuperAdmin(UserDto dto) {
+        String rawPassword = (dto.getPassword() != null && !dto.getPassword().trim().isEmpty())
+                ? dto.getPassword().trim()
+                : UserService.DEFAULT_PASSWORD;
+
         User admin = new User();
         String email = dto.getEmail() != null ? dto.getEmail() : dto.getUsername();
         admin.setEmail(email);
         admin.setUsername(dto.getUsername() != null ? dto.getUsername() : email);
-        admin.setPassword(passwordEncoder.encode(dto.getPassword()));
+        admin.setPassword(passwordEncoder.encode(rawPassword));
+        admin.setMustChangePassword(true);
         admin.setFirstName(dto.getFirstName() != null ? dto.getFirstName() : "Super");
         admin.setLastName(dto.getLastName() != null ? dto.getLastName() : "Admin");
         admin.setRole(Role.SUPER_ADMIN);
@@ -78,7 +83,7 @@ public class SuperAdminService {
         emailService.sendAccountCreatedEmailAsync(
                 dto.getUsername(),
                 dto.getUsername(),
-                dto.getPassword(),
+                rawPassword,
                 "Super Administrateur",
                 "Plateforme SiraShop"
         );
@@ -88,6 +93,7 @@ public class SuperAdminService {
         result.setUsername(saved.getUsername());
         result.setRole(saved.getRole());
         result.setActive(saved.isActive());
+        result.setMustChangePassword(saved.isMustChangePassword());
         return result;
     }
 

@@ -201,7 +201,47 @@ class UserServiceTest {
     }
 
     @Test
-    @DisplayName("Devrait réinitialiser le mot de passe d'un employé")
+    @DisplayName("Devrait créer un employé avec le mot de passe par défaut si aucun mot de passe n'est fourni")
+    void createUser_WithDefaultPassword_WhenPasswordOmitted() {
+        UserDto dto = new UserDto();
+        dto.setEmail("vendeur.default@sirashop.ml");
+        dto.setPassword(null); // Pas de mot de passe fourni
+        dto.setFirstName("Oumar");
+        dto.setLastName("Kone");
+        dto.setRole(Role.SELLER);
+
+        User userWithDefault = new User();
+        userWithDefault.setId(102L);
+        userWithDefault.setEmail("vendeur.default@sirashop.ml");
+        userWithDefault.setUsername("vendeur.default@sirashop.ml");
+        userWithDefault.setPassword("encoded_default_pwd");
+        userWithDefault.setFirstName("Oumar");
+        userWithDefault.setLastName("Kone");
+        userWithDefault.setRole(Role.SELLER);
+        userWithDefault.setActive(true);
+        userWithDefault.setMustChangePassword(true);
+
+        when(userRepository.existsByEmailIgnoreCase("vendeur.default@sirashop.ml")).thenReturn(false);
+        when(passwordEncoder.encode(UserService.DEFAULT_PASSWORD)).thenReturn("encoded_default_pwd");
+        when(userRepository.save(any(User.class))).thenReturn(userWithDefault);
+
+        UserDto created = userService.createUser(dto);
+
+        assertNotNull(created);
+        assertEquals("vendeur.default@sirashop.ml", created.getEmail());
+        assertTrue(created.isMustChangePassword());
+
+        verify(emailService).sendAccountCreatedEmailAsync(
+                eq("vendeur.default@sirashop.ml"),
+                eq("Oumar Kone"),
+                eq(UserService.DEFAULT_PASSWORD),
+                eq("SELLER"),
+                isNull()
+        );
+    }
+
+    @Test
+    @DisplayName("Devrait réinitialiser le mot de passe d'un employé et activer mustChangePassword")
     void resetUserPassword_Success() {
         when(userRepository.findById(100L)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("nouveauPass123")).thenReturn("new_encoded_pwd");
@@ -209,6 +249,29 @@ class UserServiceTest {
         userService.resetUserPassword(100L, "nouveauPass123");
 
         assertEquals("new_encoded_pwd", user.getPassword());
+        assertTrue(user.isMustChangePassword());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    @DisplayName("Devrait changer le mot de passe et désactiver mustChangePassword")
+    void changePassword_Success() {
+        com.sirashop.dto.ChangePasswordDto changeDto = new com.sirashop.dto.ChangePasswordDto();
+        changeDto.setUserId(100L);
+        changeDto.setOldPassword("currentPass123");
+        changeDto.setNewPassword("brandNewPass123");
+
+        user.setMustChangePassword(true);
+        user.setPassword("encoded_current_pwd");
+
+        when(userRepository.findById(100L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("currentPass123", "encoded_current_pwd")).thenReturn(true);
+        when(passwordEncoder.encode("brandNewPass123")).thenReturn("encoded_brand_new_pwd");
+
+        userService.changePassword(changeDto);
+
+        assertEquals("encoded_brand_new_pwd", user.getPassword());
+        assertFalse(user.isMustChangePassword(), "mustChangePassword doit passer à false après le changement de mot de passe");
         verify(userRepository).save(user);
     }
 }

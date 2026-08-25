@@ -17,4 +17,5 @@ public class UserDto {
     private Long shopId;
     private String shopName;
     private boolean isActive;
+    private boolean mustChangePassword;
 }

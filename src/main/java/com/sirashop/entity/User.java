@@ -46,6 +46,9 @@ public class User {
 
     private boolean isActive = true;
 
+    @Column(nullable = false)
+    private boolean mustChangePassword = true;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

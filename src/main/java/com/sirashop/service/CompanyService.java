@@ -67,11 +67,16 @@ public class CompanyService {
 
         Company savedCompany = companyRepository.save(company);
 
+        String rawOwnerPassword = (dto.getOwnerPassword() != null && !dto.getOwnerPassword().trim().isEmpty())
+                ? dto.getOwnerPassword().trim()
+                : UserService.DEFAULT_PASSWORD;
+
         User owner = new User();
         owner.setEmail(ownerEmail);
         owner.setUsername(ownerEmail);
         owner.setPhone(dto.getPhone() != null ? dto.getPhone().trim() : null);
-        owner.setPassword(passwordEncoder.encode(dto.getOwnerPassword()));
+        owner.setPassword(passwordEncoder.encode(rawOwnerPassword));
+        owner.setMustChangePassword(true);
         owner.setRole(Role.COMPANY_OWNER);
         owner.setCompany(savedCompany);
         owner.setActive(true);
@@ -89,7 +94,7 @@ public class CompanyService {
         emailService.sendAccountCreatedEmailAsync(
                 ownerEmail,
                 dto.getOwnerName() != null ? dto.getOwnerName() : ownerEmail,
-                dto.getOwnerPassword(),
+                rawOwnerPassword,
                 "Propriétaire d'entreprise",
                 savedCompany.getName()
         );
