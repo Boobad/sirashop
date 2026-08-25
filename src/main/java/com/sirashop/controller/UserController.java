@@ -23,10 +23,27 @@ public class UserController {
         return ResponseEntity.ok(userService.createUser(userDto));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<UserDto> updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
+        return ResponseEntity.ok(userService.updateUser(id, userDto));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UserDto> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
+
     @PutMapping("/change-password")
     public ResponseEntity<Map<String, String>> changePassword(@RequestBody ChangePasswordDto dto) {
         userService.changePassword(dto);
         return ResponseEntity.ok(Map.of("message", "Mot de passe modifié avec succès"));
+    }
+
+    @PostMapping("/{id}/reset-password")
+    public ResponseEntity<Map<String, String>> resetUserPassword(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        String newPassword = payload.get("newPassword") != null ? payload.get("newPassword") : payload.get("password");
+        userService.resetUserPassword(id, newPassword);
+        return ResponseEntity.ok(Map.of("message", "Mot de passe de l'utilisateur réinitialisé avec succès"));
     }
 
     @GetMapping("/company/{companyId}")
@@ -45,8 +62,14 @@ public class UserController {
         return ResponseEntity.ok(Map.of("message", "Utilisateur supprimé avec succès"));
     }
 
+    @PatchMapping("/{id}/toggle-active")
+    public ResponseEntity<UserDto> patchToggleUserActive(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.toggleUserActive(id));
+    }
+
     @PutMapping("/{id}/toggle-active")
     public ResponseEntity<UserDto> toggleUserActive(@PathVariable Long id) {
         return ResponseEntity.ok(userService.toggleUserActive(id));
     }
 }
+

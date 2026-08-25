@@ -17,14 +17,17 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (userRepository.findByUsername("admin").isEmpty()) {
+        if (userRepository.findByUsername("admin").isEmpty() && userRepository.findByEmail("admin@sirashop.ml").isEmpty()) {
             User admin = new User();
+            admin.setEmail("admin@sirashop.ml");
             admin.setUsername("admin");
+            admin.setFirstName("Super");
+            admin.setLastName("Admin");
             admin.setPassword(passwordEncoder.encode("admin123")); // Mot de passe haché par défaut
             admin.setRole(Role.SUPER_ADMIN);
             admin.setActive(true);
             userRepository.save(admin);
-            System.out.println("✅ Super Admin par défaut créé : username=admin, password=admin123");
+            System.out.println("✅ Super Admin par défaut créé : email=admin@sirashop.ml, username=admin, password=admin123");
         }
     }
 }

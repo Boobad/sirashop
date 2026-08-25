@@ -63,8 +63,12 @@ public class SuperAdminService {
 
     public UserDto createSuperAdmin(UserDto dto) {
         User admin = new User();
-        admin.setUsername(dto.getUsername());
+        String email = dto.getEmail() != null ? dto.getEmail() : dto.getUsername();
+        admin.setEmail(email);
+        admin.setUsername(dto.getUsername() != null ? dto.getUsername() : email);
         admin.setPassword(passwordEncoder.encode(dto.getPassword()));
+        admin.setFirstName(dto.getFirstName() != null ? dto.getFirstName() : "Super");
+        admin.setLastName(dto.getLastName() != null ? dto.getLastName() : "Admin");
         admin.setRole(Role.SUPER_ADMIN);
         admin.setActive(true);
 

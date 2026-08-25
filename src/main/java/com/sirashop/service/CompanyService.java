@@ -40,6 +40,7 @@ public class CompanyService {
 
 
         User owner = new User();
+        owner.setEmail(dto.getOwnerUsername());
         owner.setUsername(dto.getOwnerUsername());
         owner.setPassword(passwordEncoder.encode(dto.getOwnerPassword()));
         owner.setRole(Role.COMPANY_OWNER);

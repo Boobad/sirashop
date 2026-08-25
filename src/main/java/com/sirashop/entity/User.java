@@ -16,10 +16,18 @@ public class User {
     private Long id;
 
     @Column(nullable = false, unique = true)
+    private String email;
+
     private String username;
 
     @Column(nullable = false)
     private String password;
+
+    private String firstName;
+
+    private String lastName;
+
+    private String phone;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

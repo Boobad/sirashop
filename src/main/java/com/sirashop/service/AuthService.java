@@ -19,7 +19,13 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
+        String identifier = request.getIdentifier();
+        if (identifier == null) {
+            throw new RuntimeException("L'adresse email ou l'identifiant est obligatoire");
+        }
+
+        User user = userRepository.findByEmail(identifier)
+                .or(() -> userRepository.findByUsername(identifier))
                 .orElseThrow(() -> new RuntimeException("Identifiant ou mot de passe incorrect"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
@@ -40,7 +46,11 @@ public class AuthService {
         LoginResponse response = new LoginResponse();
         response.setToken(token);
         response.setId(user.getId());
-        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setUsername(user.getUsername() != null ? user.getUsername() : user.getEmail());
+        response.setFirstName(user.getFirstName());
+        response.setLastName(user.getLastName());
+        response.setPhone(user.getPhone());
         response.setRole(user.getRole());
 
         if (user.getCompany() != null) {
