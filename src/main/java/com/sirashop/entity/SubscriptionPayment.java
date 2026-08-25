@@ -9,7 +9,12 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "subscription_payments")
+@Table(
+    name = "subscription_payments",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_company_subscription_period", columnNames = {"company_id", "period_month", "period_year"})
+    }
+)
 public class SubscriptionPayment {
 
     @Id
@@ -23,10 +28,10 @@ public class SubscriptionPayment {
     @Column(nullable = false)
     private BigDecimal amount; // ex: 30000 FCFA
 
-    @Column(nullable = false)
+    @Column(name = "period_month", nullable = false)
     private String periodMonth; // ex: Août, Septembre...
 
-    @Column(nullable = false)
+    @Column(name = "period_year", nullable = false)
     private Integer periodYear; // ex: 2026
 
     private String notes;

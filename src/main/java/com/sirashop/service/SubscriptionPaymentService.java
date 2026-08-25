@@ -20,14 +20,40 @@ public class SubscriptionPaymentService {
     private final CompanyRepository companyRepository;
 
     public SubscriptionPaymentDto recordPayment(SubscriptionPaymentDto dto) {
+        if (dto.getCompanyId() == null) {
+            throw new RuntimeException("L'identifiant de l'entreprise est obligatoire pour enregistrer un paiement.");
+        }
+        if (dto.getPeriodMonth() == null || dto.getPeriodMonth().trim().isEmpty()) {
+            throw new RuntimeException("Le mois de la période d'abonnement est obligatoire.");
+        }
+        if (dto.getAmount() == null || dto.getAmount().compareTo(java.math.BigDecimal.ZERO) <= 0) {
+            throw new RuntimeException("Le montant du paiement doit être supérieur à zéro.");
+        }
+
         Company company = companyRepository.findById(dto.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("Entreprise non trouvée"));
+
+        String cleanMonth = dto.getPeriodMonth().trim();
+        int cleanYear = (dto.getPeriodYear() != null && dto.getPeriodYear() > 0) 
+                ? dto.getPeriodYear() 
+                : LocalDate.now().getYear();
+
+        // Vérifier si un paiement a déjà été effectué pour cette entreprise, ce mois et cette année
+        boolean alreadyPaid = paymentRepository.existsByCompanyIdAndPeriodMonthIgnoreCaseAndPeriodYear(
+                company.getId(),
+                cleanMonth,
+                cleanYear
+        );
+
+        if (alreadyPaid) {
+            throw new RuntimeException("L'entreprise '" + company.getName() + "' a déjà réglé son abonnement pour le mois de " + cleanMonth + " " + cleanYear + ".");
+        }
 
         SubscriptionPayment payment = new SubscriptionPayment();
         payment.setCompany(company);
         payment.setAmount(dto.getAmount());
-        payment.setPeriodMonth(dto.getPeriodMonth());
-        payment.setPeriodYear(dto.getPeriodYear() != null ? dto.getPeriodYear() : LocalDate.now().getYear());
+        payment.setPeriodMonth(cleanMonth);
+        payment.setPeriodYear(cleanYear);
         payment.setNotes(dto.getNotes());
 
         // Quand le paiement de l'abonnement est enregistré, débloquer automatiquement l'entreprise !

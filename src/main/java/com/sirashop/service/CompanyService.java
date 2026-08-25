@@ -38,7 +38,7 @@ public class CompanyService {
         company.setActive(true);
         Company savedCompany = companyRepository.save(company);
 
-        // Créer automatiquement le compte propriétaire associé
+
         User owner = new User();
         owner.setUsername(dto.getOwnerUsername());
         owner.setPassword(passwordEncoder.encode(dto.getOwnerPassword()));
@@ -47,7 +47,7 @@ public class CompanyService {
         owner.setActive(true);
         userRepository.save(owner);
 
-        // Envoi de l'email avec les identifiants au propriétaire
+
         emailService.sendAccountCreatedEmailAsync(
                 dto.getOwnerUsername(),
                 dto.getOwnerUsername(),

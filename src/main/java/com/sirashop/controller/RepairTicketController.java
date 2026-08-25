@@ -28,10 +28,32 @@ public class RepairTicketController {
             @PathVariable Long id,
             @RequestBody Map<String, Object> payload
     ) {
-        RepairStatus status = RepairStatus.valueOf(payload.get("status").toString());
+        RepairStatus status = payload.get("status") != null ? RepairStatus.valueOf(payload.get("status").toString()) : null;
         Long technicianId = payload.get("technicianId") != null ? Long.valueOf(payload.get("technicianId").toString()) : null;
+        java.math.BigDecimal depositAmount = payload.get("depositAmount") != null ? new java.math.BigDecimal(payload.get("depositAmount").toString()) : null;
+        Boolean payInFull = payload.get("payInFull") != null ? Boolean.valueOf(payload.get("payInFull").toString()) : null;
 
-        return ResponseEntity.ok(repairTicketService.updateStatus(id, status, technicianId));
+        return ResponseEntity.ok(repairTicketService.updateStatus(id, status, technicianId, depositAmount, payInFull));
+    }
+
+    @PutMapping("/{id}/payment")
+    public ResponseEntity<RepairTicketDto> updatePayment(
+            @PathVariable Long id,
+            @RequestBody Map<String, Object> payload
+    ) {
+        java.math.BigDecimal depositAmount = payload.get("depositAmount") != null ? new java.math.BigDecimal(payload.get("depositAmount").toString()) : null;
+        java.math.BigDecimal additionalPayment = payload.get("additionalPayment") != null ? new java.math.BigDecimal(payload.get("additionalPayment").toString()) : null;
+        Boolean payInFull = payload.get("payInFull") != null ? Boolean.valueOf(payload.get("payInFull").toString()) : null;
+
+        return ResponseEntity.ok(repairTicketService.updatePayment(id, depositAmount, additionalPayment, payInFull));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RepairTicketDto> updateTicket(
+            @PathVariable Long id,
+            @RequestBody RepairTicketDto dto
+    ) {
+        return ResponseEntity.ok(repairTicketService.updateTicket(id, dto));
     }
 
     @GetMapping("/shop/{shopId}")

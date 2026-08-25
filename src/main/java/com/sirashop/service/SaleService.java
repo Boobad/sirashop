@@ -25,12 +25,25 @@ public class SaleService {
 
     @Transactional
     public SaleDto processSale(SaleDto dto) {
-        Company company = companyRepository.findById(dto.getCompanyId())
-                .orElseThrow(() -> new RuntimeException("Entreprise non trouvée"));
+        if (dto == null) {
+            throw new IllegalArgumentException("Les données de la vente sont vides.");
+        }
+        if (dto.getShopId() == null) {
+            throw new IllegalArgumentException("L'identifiant de la boutique (shopId) est obligatoire pour enregistrer une vente.");
+        }
+        if (dto.getSellerId() == null) {
+            throw new IllegalArgumentException("L'identifiant du vendeur (sellerId) est obligatoire pour enregistrer une vente.");
+        }
+
         Shop shop = shopRepository.findById(dto.getShopId())
-                .orElseThrow(() -> new RuntimeException("Boutique non trouvée"));
+                .orElseThrow(() -> new RuntimeException("Boutique non trouvée (ID: " + dto.getShopId() + ")"));
+
+        Company company = (dto.getCompanyId() != null)
+                ? companyRepository.findById(dto.getCompanyId()).orElse(shop.getCompany())
+                : shop.getCompany();
+
         User seller = userRepository.findById(dto.getSellerId())
-                .orElseThrow(() -> new RuntimeException("Vendeur non trouvé"));
+                .orElseThrow(() -> new RuntimeException("Vendeur non trouvé (ID: " + dto.getSellerId() + ")"));
 
         Sale sale = new Sale();
         sale.setCompany(company);

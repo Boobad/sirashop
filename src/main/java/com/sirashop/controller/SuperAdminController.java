@@ -44,4 +44,9 @@ public class SuperAdminController {
     public ResponseEntity<List<SubscriptionPaymentDto>> getAllPayments() {
         return ResponseEntity.ok(paymentService.getAllPayments());
     }
+
+    @GetMapping("/subscriptions/company/{companyId}")
+    public ResponseEntity<List<SubscriptionPaymentDto>> getPaymentsByCompany(@PathVariable Long companyId) {
+        return ResponseEntity.ok(paymentService.getPaymentsByCompany(companyId));
+    }
 }
