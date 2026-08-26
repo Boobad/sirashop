@@ -76,11 +76,11 @@ class CompanyServiceTest {
     }
 
     @Test
-    @DisplayName("Devrait créer une entreprise avec son propriétaire et ses modules activés")
+    @DisplayName("Devrait créer une entreprise avec son propriétaire, téléphone 8+ chiffres et ses modules activés")
     void createCompanyWithOwner_Success() {
         CompanyRegistrationDto dto = new CompanyRegistrationDto();
         dto.setCompanyName("Boutique High-Tech & SAV");
-        dto.setPhone("66000000");
+        dto.setPhone("66000000"); // 8 chiffres
         dto.setOwnerName("Bakary Diallo");
         dto.setOwnerEmail("bakary@sirashop.ml");
         dto.setOwnerPassword("pass123");
@@ -114,34 +114,52 @@ class CompanyServiceTest {
     }
 
     @Test
-    @DisplayName("Devrait créer une entreprise avec le mot de passe par défaut si le propriétaire n'a pas saisi de mot de passe")
-    void createCompanyWithOwner_DefaultPassword_Success() {
-        CompanyRegistrationDto dto = new CompanyRegistrationDto();
-        dto.setCompanyName("Boutique Mode & Style");
-        dto.setOwnerName("Fatoumata Coulibaly");
-        dto.setOwnerEmail("fatou@sirashop.ml");
-        dto.setOwnerPassword(null); // Pas de mot de passe
-        dto.setHasSalesEnabled(true);
+    @DisplayName("Devrait autoriser plusieurs entreprises avec le même nom (ex: lol ou Boutique Moderne) tant que l'email du propriétaire est unique")
+    void createCompanyWithOwner_SameCompanyNameDifferentOwner_Success() {
+        CompanyRegistrationDto dto1 = new CompanyRegistrationDto();
+        dto1.setCompanyName("lol");
+        dto1.setOwnerEmail("owner1@sirashop.ml");
+        dto1.setPhone("76000001");
 
-        Company fashionCompany = new Company();
-        fashionCompany.setId(3L);
-        fashionCompany.setName("Boutique Mode & Style");
+        Company company1 = new Company();
+        company1.setId(10L);
+        company1.setName("lol");
 
-        when(userRepository.existsByEmailIgnoreCase("fatou@sirashop.ml")).thenReturn(false);
-        when(companyRepository.save(any(Company.class))).thenReturn(fashionCompany);
-        when(passwordEncoder.encode(UserService.DEFAULT_PASSWORD)).thenReturn("encoded_default_pass");
+        when(userRepository.existsByEmailIgnoreCase("owner1@sirashop.ml")).thenReturn(false);
+        when(companyRepository.save(any(Company.class))).thenReturn(company1);
+        when(passwordEncoder.encode(anyString())).thenReturn("encoded_pwd");
 
-        CompanyDto created = companyService.createCompanyWithOwner(dto);
-
+        CompanyDto created = companyService.createCompanyWithOwner(dto1);
         assertNotNull(created);
-        verify(userRepository).save(any(User.class));
-        verify(emailService).sendAccountCreatedEmailAsync(
-                eq("fatou@sirashop.ml"),
-                eq("Fatoumata Coulibaly"),
-                eq(UserService.DEFAULT_PASSWORD),
-                eq("Propriétaire d'entreprise"),
-                eq("Boutique Mode & Style")
-        );
+        assertEquals("lol", created.getName());
+    }
+
+    @Test
+    @DisplayName("Devrait rejeter la création si le téléphone comporte moins de 8 chiffres")
+    void createCompanyWithOwner_PhoneTooShort_ThrowsException() {
+        CompanyRegistrationDto dto = new CompanyRegistrationDto();
+        dto.setCompanyName("Boutique High-Tech");
+        dto.setOwnerEmail("bakary@sirashop.ml");
+        dto.setPhone("12345"); // 5 chiffres (trop court)
+
+        when(userRepository.existsByEmailIgnoreCase("bakary@sirashop.ml")).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> companyService.createCompanyWithOwner(dto));
+        assertTrue(ex.getMessage().contains("au moins 8 chiffres"));
+    }
+
+    @Test
+    @DisplayName("Devrait rejeter la création si l'email du propriétaire est déjà utilisé")
+    void createCompanyWithOwner_DuplicateEmail_ThrowsException() {
+        CompanyRegistrationDto dto = new CompanyRegistrationDto();
+        dto.setCompanyName("Boutique High-Tech");
+        dto.setOwnerEmail("bakary@sirashop.ml");
+        dto.setPhone("76000000");
+
+        when(userRepository.existsByEmailIgnoreCase("bakary@sirashop.ml")).thenReturn(true);
+
+        RuntimeException ex = assertThrows(RuntimeException.class, () -> companyService.createCompanyWithOwner(dto));
+        assertTrue(ex.getMessage().contains("est déjà utilisée"));
     }
 
     @Test

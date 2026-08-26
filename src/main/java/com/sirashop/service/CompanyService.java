@@ -28,8 +28,14 @@ public class CompanyService {
             throw new RuntimeException("Le nom de l'entreprise est obligatoire.");
         }
 
+        String cleanName = dto.getName().trim();
+
+        if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty() && dto.getPhone().trim().length() < 8) {
+            throw new RuntimeException("Le numéro de téléphone doit comporter au moins 8 chiffres.");
+        }
+
         Company company = new Company();
-        company.setName(dto.getName().trim());
+        company.setName(cleanName);
         company.setPhone(dto.getPhone() != null ? dto.getPhone().trim() : null);
         company.setOwnerName(dto.getOwnerName() != null ? dto.getOwnerName().trim() : null);
         company.setHasSalesEnabled(dto.isHasSalesEnabled());
@@ -45,11 +51,13 @@ public class CompanyService {
             throw new RuntimeException("Le nom de l'entreprise est obligatoire.");
         }
 
+        String cleanCompanyName = dto.getCompanyName().trim();
+
         String ownerEmail = dto.getOwnerEmail() != null && !dto.getOwnerEmail().trim().isEmpty()
                 ? dto.getOwnerEmail().trim().toLowerCase()
                 : (dto.getOwnerUsername() != null ? dto.getOwnerUsername().trim().toLowerCase() : null);
 
-        if (ownerEmail == null) {
+        if (ownerEmail == null || ownerEmail.isEmpty()) {
             throw new RuntimeException("L'adresse email du propriétaire est obligatoire.");
         }
 
@@ -57,9 +65,15 @@ public class CompanyService {
             throw new RuntimeException("L'adresse email '" + ownerEmail + "' est déjà utilisée par un autre compte.");
         }
 
+        if (dto.getPhone() == null || dto.getPhone().trim().length() < 8) {
+            throw new RuntimeException("Le numéro de téléphone est obligatoire et doit comporter au moins 8 chiffres.");
+        }
+
+        String cleanPhone = dto.getPhone().trim();
+
         Company company = new Company();
-        company.setName(dto.getCompanyName().trim());
-        company.setPhone(dto.getPhone() != null ? dto.getPhone().trim() : null);
+        company.setName(cleanCompanyName);
+        company.setPhone(cleanPhone);
         company.setOwnerName(dto.getOwnerName() != null ? dto.getOwnerName().trim() : null);
         company.setHasSalesEnabled(dto.isHasSalesEnabled());
         company.setHasRepairsEnabled(dto.isHasRepairsEnabled());
@@ -70,6 +84,10 @@ public class CompanyService {
         String rawOwnerPassword = (dto.getOwnerPassword() != null && !dto.getOwnerPassword().trim().isEmpty())
                 ? dto.getOwnerPassword().trim()
                 : UserService.DEFAULT_PASSWORD;
+
+        if (rawOwnerPassword.length() < 6) {
+            throw new RuntimeException("Le mot de passe doit comporter au moins 6 caractères.");
+        }
 
         User owner = new User();
         owner.setEmail(ownerEmail);
