@@ -106,7 +106,6 @@ public class DashboardService {
         stats.setTotalRevenue(totalSalesRevenue.add(totalRepairRevenue));
         stats.setTotalSalesCount((long) companySales.size());
         stats.setTotalRepairsCount((long) companyRepairs.size());
-
         // Stats par boutique
         stats.setShopStats(buildShopStats(companySales, companyRepairs, companyShops));
 
