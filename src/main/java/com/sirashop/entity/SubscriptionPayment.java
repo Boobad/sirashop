@@ -34,6 +34,13 @@ public class SubscriptionPayment {
     @Column(name = "period_year", nullable = false)
     private Integer periodYear; // ex: 2026
 
+    @Column(name = "payment_method")
+    private String paymentMethod; // Ex: 'CASH', 'ORANGE_MONEY', 'MOOV_MONEY', 'WAVE', 'CARD'
+
+    private java.time.LocalDate startDate; // Début de la période couverte
+
+    private java.time.LocalDate endDate; // Fin de la période couverte (expiration)
+
     private String notes;
 
     @CreationTimestamp

@@ -18,4 +18,10 @@ public class LoginResponse {
     private Boolean hasSalesEnabled;
     private Boolean hasRepairsEnabled;
     private boolean mustChangePassword;
+
+    // Informations et Alertes d'Abonnement (J-3, Grâce, Expiration)
+    private java.time.LocalDate subscriptionExpiresAt;
+    private String subscriptionStatus; // ACTIVE, EXPIRING_SOON, GRACE_PERIOD, EXPIRED
+    private Long subscriptionDaysRemaining;
+    private String subscriptionAlertMessage;
 }

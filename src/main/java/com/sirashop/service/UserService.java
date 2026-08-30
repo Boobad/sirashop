@@ -3,6 +3,7 @@ package com.sirashop.service;
 import com.sirashop.dto.ChangePasswordDto;
 import com.sirashop.dto.UserDto;
 import com.sirashop.entity.Company;
+import com.sirashop.entity.Role;
 import com.sirashop.entity.Shop;
 import com.sirashop.entity.User;
 import com.sirashop.repository.CompanyRepository;
@@ -28,28 +29,50 @@ public class UserService {
     private final EmailService emailService;
 
     public UserDto createUser(UserDto dto) {
-        // L'email est l'identifiant unique obligatoire
-        String rawEmail = dto.getEmail() != null && !dto.getEmail().trim().isEmpty() 
-                ? dto.getEmail().trim() 
-                : (dto.getUsername() != null ? dto.getUsername().trim() : null);
+        boolean hasAppAccess = dto.isHasAppAccess();
 
-        if (rawEmail == null || rawEmail.isEmpty()) {
-            throw new RuntimeException("L'adresse email est obligatoire pour créer un compte.");
+        String cleanEmail;
+        String rawPassword;
+
+        if (hasAppAccess) {
+            // L'email est l'identifiant unique obligatoire si accès à l'application
+            String rawEmail = dto.getEmail() != null && !dto.getEmail().trim().isEmpty() 
+                    ? dto.getEmail().trim() 
+                    : (dto.getUsername() != null ? dto.getUsername().trim() : null);
+
+            if (rawEmail == null || rawEmail.isEmpty()) {
+                throw new RuntimeException("L'adresse email est obligatoire pour créer un compte avec accès à l'application.");
+            }
+
+            cleanEmail = rawEmail.toLowerCase();
+            if (userRepository.existsByEmailIgnoreCase(cleanEmail)) {
+                throw new RuntimeException("L'adresse email '" + cleanEmail + "' est déjà utilisée par un autre compte.");
+            }
+
+            // Si aucun mot de passe n'est fourni, on utilise le mot de passe par défaut
+            rawPassword = (dto.getPassword() != null && !dto.getPassword().trim().isEmpty())
+                    ? dto.getPassword().trim()
+                    : DEFAULT_PASSWORD;
+
+            if (rawPassword.length() < 6) {
+                throw new RuntimeException("Le mot de passe doit comporter au moins 6 caractères.");
+            }
+        } else {
+            // Technicien / Employé SANS accès à l'application (simple exécutant pour assignation)
+            if (dto.getEmail() != null && !dto.getEmail().trim().isEmpty()) {
+                cleanEmail = dto.getEmail().trim().toLowerCase();
+                if (userRepository.existsByEmailIgnoreCase(cleanEmail)) {
+                    throw new RuntimeException("L'adresse email '" + cleanEmail + "' est déjà utilisée par un autre compte.");
+                }
+            } else {
+                String phoneSuffix = (dto.getPhone() != null && !dto.getPhone().trim().isEmpty())
+                        ? dto.getPhone().trim()
+                        : java.util.UUID.randomUUID().toString().substring(0, 8);
+                cleanEmail = "tech." + phoneSuffix + "@sirashop.local";
+            }
+            rawPassword = java.util.UUID.randomUUID().toString();
         }
 
-        String cleanEmail = rawEmail.toLowerCase();
-        if (userRepository.existsByEmailIgnoreCase(cleanEmail)) {
-            throw new RuntimeException("L'adresse email '" + cleanEmail + "' est déjà utilisée par un autre compte.");
-        }
-
-        // Si aucun mot de passe n'est fourni, on utilise le mot de passe par défaut
-        String rawPassword = (dto.getPassword() != null && !dto.getPassword().trim().isEmpty())
-                ? dto.getPassword().trim()
-                : DEFAULT_PASSWORD;
-
-        if (rawPassword.length() < 6) {
-            throw new RuntimeException("Le mot de passe doit comporter au moins 6 caractères.");
-        }
         if (dto.getPhone() != null && !dto.getPhone().trim().isEmpty() && dto.getPhone().trim().length() < 8) {
             throw new RuntimeException("Le numéro de téléphone doit comporter au moins 8 chiffres.");
         }
@@ -62,12 +85,13 @@ public class UserService {
         user.setEmail(cleanEmail);
         user.setUsername(cleanUsername);
         user.setPassword(passwordEncoder.encode(rawPassword));
-        user.setMustChangePassword(true);
+        user.setMustChangePassword(hasAppAccess);
+        user.setHasAppAccess(hasAppAccess);
         // Le nom et le prénom ne sont PAS uniques (plusieurs personnes peuvent avoir le même nom)
         user.setFirstName(dto.getFirstName() != null ? dto.getFirstName().trim() : null);
         user.setLastName(dto.getLastName() != null ? dto.getLastName().trim() : null);
         user.setPhone(dto.getPhone() != null ? dto.getPhone().trim() : null);
-        user.setRole(dto.getRole());
+        user.setRole(dto.getRole() != null ? dto.getRole() : Role.TECHNICIAN);
         user.setActive(true);
 
         String companyName = null;
@@ -86,19 +110,21 @@ public class UserService {
 
         User saved = userRepository.save(user);
 
-        // Envoi de l'email avec les identifiants à l'utilisateur
-        String roleDescription = (dto.getRole() != null) ? dto.getRole().name() : "Utilisateur";
-        String recipientDisplayName = (dto.getFirstName() != null && dto.getLastName() != null) 
-                ? (dto.getFirstName() + " " + dto.getLastName()) 
-                : cleanUsername;
+        // Envoi de l'email UNIQUEMENT si l'employé a un accès à l'application
+        if (hasAppAccess) {
+            String roleDescription = (dto.getRole() != null) ? dto.getRole().name() : "Utilisateur";
+            String recipientDisplayName = (dto.getFirstName() != null && dto.getLastName() != null) 
+                    ? (dto.getFirstName() + " " + dto.getLastName()) 
+                    : cleanUsername;
 
-        emailService.sendAccountCreatedEmailAsync(
-                cleanEmail,
-                recipientDisplayName,
-                rawPassword,
-                roleDescription,
-                companyName
-        );
+            emailService.sendAccountCreatedEmailAsync(
+                    cleanEmail,
+                    recipientDisplayName,
+                    rawPassword,
+                    roleDescription,
+                    companyName
+            );
+        }
 
         return mapToDto(saved);
     }
@@ -150,6 +176,8 @@ public class UserService {
                     .orElseThrow(() -> new RuntimeException("Entreprise non trouvée: " + dto.getCompanyId()));
             user.setCompany(company);
         }
+
+        user.setHasAppAccess(dto.isHasAppAccess());
 
         User saved = userRepository.save(user);
         return mapToDto(saved);
@@ -232,6 +260,7 @@ public class UserService {
         dto.setPhone(user.getPhone());
         dto.setRole(user.getRole());
         dto.setActive(user.isActive());
+        dto.setHasAppAccess(user.isHasAppAccess());
         dto.setMustChangePassword(user.isMustChangePassword());
         
         if (user.getCompany() != null) {

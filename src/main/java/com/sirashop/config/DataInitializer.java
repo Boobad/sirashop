@@ -17,17 +17,37 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
-        if (userRepository.findByUsername("admin").isEmpty() && userRepository.findByEmail("admin@sirashop.ml").isEmpty()) {
-            User admin = new User();
-            admin.setEmail("admin@sirashop.ml");
-            admin.setUsername("admin");
-            admin.setFirstName("Super");
-            admin.setLastName("Admin");
-            admin.setPassword(passwordEncoder.encode("admin123")); // Mot de passe haché par défaut
-            admin.setRole(Role.SUPER_ADMIN);
-            admin.setActive(true);
-            userRepository.save(admin);
-            System.out.println("✅ Super Admin par défaut créé : email=admin@sirashop.ml, username=admin, password=admin123");
-        }
+        userRepository.findByUsername("admin").ifPresentOrElse(
+                existingAdmin -> {
+                    if (!existingAdmin.isHasAppAccess() || !existingAdmin.isActive()) {
+                        existingAdmin.setHasAppAccess(true);
+                        existingAdmin.setActive(true);
+                        userRepository.save(existingAdmin);
+                        System.out.println("🔄 Super Admin 'admin' mis à jour avec accès complet.");
+                    }
+                },
+                () -> {
+                    User admin = new User();
+                    admin.setEmail("admin@sirashop.ml");
+                    admin.setUsername("admin");
+                    admin.setFirstName("Super");
+                    admin.setLastName("Admin");
+                    admin.setPassword(passwordEncoder.encode("admin123"));
+                    admin.setRole(Role.SUPER_ADMIN);
+                    admin.setActive(true);
+                    admin.setHasAppAccess(true);
+                    admin.setMustChangePassword(false);
+                    userRepository.save(admin);
+                    System.out.println("✅ Super Admin par défaut créé : email=admin@sirashop.ml, username=admin, password=admin123");
+                }
+        );
+
+        // Mise à jour de sécurité pour tous les Super Admins et Propriétaires existants
+        userRepository.findAll().forEach(u -> {
+            if ((u.getRole() == Role.SUPER_ADMIN || u.getRole() == Role.COMPANY_OWNER) && !u.isHasAppAccess()) {
+                u.setHasAppAccess(true);
+                userRepository.save(u);
+            }
+        });
     }
 }

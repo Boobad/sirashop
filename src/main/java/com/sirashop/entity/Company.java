@@ -29,6 +29,9 @@ public class Company {
 
     private boolean isActive = true;
 
+    // Date d'expiration de l'abonnement en cours (1 mois renouvelable)
+    private java.time.LocalDate subscriptionExpiresAt;
+
     @CreationTimestamp
     private LocalDateTime createdAt;
 }

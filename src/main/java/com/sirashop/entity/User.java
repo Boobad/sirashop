@@ -46,6 +46,9 @@ public class User {
 
     private boolean isActive = true;
 
+    // Indique si l'utilisateur a des identifiants et le droit de se connecter à l'application
+    private boolean hasAppAccess = true;
+
     @Column(nullable = false)
     private boolean mustChangePassword = true;
 

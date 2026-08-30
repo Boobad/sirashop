@@ -17,5 +17,6 @@ public class UserDto {
     private Long shopId;
     private String shopName;
     private boolean isActive;
+    private boolean hasAppAccess = true;
     private boolean mustChangePassword;
 }

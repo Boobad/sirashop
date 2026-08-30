@@ -52,6 +52,7 @@ class SubscriptionPaymentServiceTest {
         dto.setAmount(new BigDecimal("30000"));
         dto.setPeriodMonth("Août");
         dto.setPeriodYear(2026);
+        dto.setPaymentMethod("ORANGE_MONEY");
         dto.setNotes("Paiement via Orange Money");
 
         when(companyRepository.findById(1L)).thenReturn(Optional.of(company));
@@ -64,6 +65,7 @@ class SubscriptionPaymentServiceTest {
         savedPayment.setAmount(dto.getAmount());
         savedPayment.setPeriodMonth("Août");
         savedPayment.setPeriodYear(2026);
+        savedPayment.setPaymentMethod("ORANGE_MONEY");
         savedPayment.setNotes(dto.getNotes());
         savedPayment.setPaymentDate(LocalDateTime.now());
 
@@ -76,6 +78,7 @@ class SubscriptionPaymentServiceTest {
         assertEquals("Boutique Test", result.getCompanyName());
         assertEquals("Août", result.getPeriodMonth());
         assertEquals(2026, result.getPeriodYear());
+        assertEquals("ORANGE_MONEY", result.getPaymentMethod());
         assertTrue(company.isActive(), "L'entreprise doit être activée après paiement");
 
         verify(companyRepository).save(company);
@@ -133,5 +136,64 @@ class SubscriptionPaymentServiceTest {
         });
 
         assertTrue(exception.getMessage().contains("Le montant du paiement doit être supérieur à zéro"));
+    }
+
+    @Test
+    @DisplayName("Devrait calculer automatiquement la date d'expiration (+1 mois) et réactiver l'entreprise")
+    void recordPayment_CalculatesDatesAndUpdatesExpiration() {
+        SubscriptionPaymentDto dto = new SubscriptionPaymentDto();
+        dto.setCompanyId(1L);
+        dto.setAmount(new BigDecimal("30000"));
+        dto.setPeriodMonth("Septembre");
+        dto.setPeriodYear(2026);
+        dto.setPaymentMethod("WAVE");
+
+        when(companyRepository.findById(1L)).thenReturn(Optional.of(company));
+        when(paymentRepository.existsByCompanyIdAndPeriodMonthIgnoreCaseAndPeriodYear(1L, "Septembre", 2026))
+                .thenReturn(false);
+        when(paymentRepository.save(any(SubscriptionPayment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        SubscriptionPaymentDto result = paymentService.recordPayment(dto);
+
+        assertNotNull(result);
+        assertNotNull(result.getStartDate(), "La date de début doit être initialisée");
+        assertNotNull(result.getEndDate(), "La date de fin doit être calculée");
+        assertEquals(result.getStartDate().plusMonths(1), result.getEndDate(), "La période doit être de 1 mois");
+        assertEquals(result.getEndDate(), company.getSubscriptionExpiresAt(), "L'entreprise doit avoir sa date d'expiration mise à jour");
+        assertTrue(company.isActive(), "L'entreprise doit être active");
+    }
+
+    @Test
+    @DisplayName("Devrait suspendre automatiquement les entreprises dont la date d'expiration + 3 jours de grâce est dépassée")
+    void autoSuspendExpiredCompanies_SuspendsOnlyAfterGracePeriod() {
+        Company expiredBeyondGrace = new Company();
+        expiredBeyondGrace.setId(10L);
+        expiredBeyondGrace.setName("Boutique Expirée");
+        expiredBeyondGrace.setActive(true);
+        expiredBeyondGrace.setSubscriptionExpiresAt(java.time.LocalDate.now().minusDays(4)); // Expiré il y a 4 jours (> 3 jours grâce)
+
+        Company inGracePeriod = new Company();
+        inGracePeriod.setId(20L);
+        inGracePeriod.setName("Boutique En Grâce");
+        inGracePeriod.setActive(true);
+        inGracePeriod.setSubscriptionExpiresAt(java.time.LocalDate.now().minusDays(2)); // Expiré il y a 2 jours (<= 3 jours grâce)
+
+        Company activeValid = new Company();
+        activeValid.setId(30L);
+        activeValid.setName("Boutique Valide");
+        activeValid.setActive(true);
+        activeValid.setSubscriptionExpiresAt(java.time.LocalDate.now().plusDays(15)); // Valide encore 15 jours
+
+        when(companyRepository.findAll()).thenReturn(java.util.List.of(expiredBeyondGrace, inGracePeriod, activeValid));
+
+        paymentService.autoSuspendExpiredCompanies();
+
+        assertFalse(expiredBeyondGrace.isActive(), "L'entreprise expirée depuis plus de 3 jours doit être suspendue");
+        assertTrue(inGracePeriod.isActive(), "L'entreprise en période de grâce doit rester active");
+        assertTrue(activeValid.isActive(), "L'entreprise avec abonnement valide doit rester active");
+
+        verify(companyRepository).save(expiredBeyondGrace);
+        verify(companyRepository, never()).save(inGracePeriod);
+        verify(companyRepository, never()).save(activeValid);
     }
 }

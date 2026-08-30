@@ -13,6 +13,9 @@ public class SubscriptionPaymentDto {
     private BigDecimal amount;
     private String periodMonth;
     private Integer periodYear;
+    private String paymentMethod;
+    private java.time.LocalDate startDate;
+    private java.time.LocalDate endDate;
     private String notes;
     private LocalDateTime paymentDate;
 }

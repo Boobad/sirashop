@@ -274,4 +274,34 @@ class UserServiceTest {
         assertFalse(user.isMustChangePassword(), "mustChangePassword doit passer à false après le changement de mot de passe");
         verify(userRepository).save(user);
     }
+
+    @Test
+    @DisplayName("Devrait enregistrer un technicien réparateur SANS accès à l'application et SANS envoyer d'email")
+    void createTechnicianWithoutAppAccess_Success() {
+        UserDto dto = new UserDto();
+        dto.setFirstName("Moussa");
+        dto.setLastName("Diarra");
+        dto.setPhone("76000000");
+        dto.setRole(Role.TECHNICIAN);
+        dto.setHasAppAccess(false); // Pas d'accès à l'application
+        dto.setCompanyId(1L);
+        dto.setShopId(10L);
+
+        when(companyRepository.findById(1L)).thenReturn(Optional.of(company));
+        when(shopRepository.findById(10L)).thenReturn(Optional.of(shop));
+        when(passwordEncoder.encode(anyString())).thenReturn("dummy_encoded_pwd");
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        UserDto created = userService.createUser(dto);
+
+        assertNotNull(created);
+        assertEquals("Moussa", created.getFirstName());
+        assertEquals("Diarra", created.getLastName());
+        assertEquals("76000000", created.getPhone());
+        assertFalse(created.isHasAppAccess(), "L'employé ne doit pas avoir d'accès app");
+        assertTrue(created.getEmail().contains("tech.76000000@sirashop.local"), "Un email interne doit être généré automatiquement");
+
+        // VÉRIFICATION CRUCIALE : AUCUN EMAIL NE DOIT ÊTRE ENVOYÉ !
+        verify(emailService, never()).sendAccountCreatedEmailAsync(anyString(), anyString(), anyString(), anyString(), anyString());
+    }
 }
